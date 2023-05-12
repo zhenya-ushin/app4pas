@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
 using DBRequest;
+using Microsoft.IdentityModel.Tokens;
 
 namespace DBRequest
 {
@@ -15,13 +16,50 @@ namespace DBRequest
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseSqlite("DataSource = helloapp.db");
+            optionsBuilder.UseSqlite("DataSource = DataPass.db");
         }
 
 
     }
 }
+namespace DBRequest
+{
+    public class DatabaseReg : DbContext
+    {
+        public DbSet<Registration> Registrations { get; set; } = null!;
+        public DatabaseReg() => Database.EnsureCreated();
 
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            optionsBuilder.UseSqlite("DataSource = RegPass.db");
+            optionsBuilder.Entity<Registration>().Totable("RegUser");
+        }
+
+
+    }
+}
+public class Registration
+{
+    public int Id { get; set; }
+    public string Regmail { get; set; }
+    public string RegPass { get; set; }
+}
+
+class RegController
+{
+    //написать код для добавления данных из класса Registration в отдельный файл БД
+}
+public class Autorithation
+{
+    public int Id { get; set; }
+    public string LogMail { get; set; }
+    public string MasterPassword { get; set; }
+}
+
+public class AutorithationController
+{
+    //Написать код сверяющий логин и пароль из класса Autorithation с логином и паролем из отдельного файла
+}
 public class UserData
 {
     public int Id { get; set; }
@@ -76,10 +114,10 @@ public class AESEncryptionManager
     }
 
     // зашифровать строку
-    public string Encrypt(string plaintext)
+    public string Encrypt(string inptxt)
     {
-        byte[] plainBytes = Encoding.UTF8.GetBytes(plaintext);
-        byte[] cipherBytes;
+        byte[] inpBytes = Encoding.UTF8.GetBytes(inptxt);
+        byte[] encBytes;
 
         using (Aes aes = Aes.Create())
         {
@@ -90,26 +128,26 @@ public class AESEncryptionManager
 
             using (ICryptoTransform encryptor = aes.CreateEncryptor())
             {
-                cipherBytes = encryptor.TransformFinalBlock(plainBytes, 0, plainBytes.Length);
+                encBytes = encryptor.TransformFinalBlock(inpBytes, 0, inpBytes.Length);
             }
             // объединить зашифрованный текст и вектор инициализации в один массив
-            byte[] cipherIvBytes = new byte[iv.Length + cipherBytes.Length];
-            Array.Copy(iv, cipherIvBytes, iv.Length);
-            Array.Copy(cipherBytes, 0, cipherIvBytes, iv.Length, cipherBytes.Length);
+            byte[] encIvBytes = new byte[iv.Length + encBytes.Length];
+            Array.Copy(iv, encIvBytes, iv.Length);
+            Array.Copy(encBytes, 0, encIvBytes, iv.Length, encBytes.Length);
 
-            return Convert.ToBase64String(cipherIvBytes);
+            return Convert.ToBase64String(encIvBytes);
         }
     }
 
     // дешифровать строку
-    public string Decrypt(string ciphertext)
+    public string Decrypt(string enctext)
     {
-        byte[] cipherIvBytes = Convert.FromBase64String(ciphertext);
+        byte[] encIvBytes = Convert.FromBase64String(enctext);
         byte[] iv = new byte[16]; // IV имеет длину 16 байт
-        byte[] cipherBytes = new byte[cipherIvBytes.Length - iv.Length];
-        Array.Copy(cipherIvBytes, iv, iv.Length);
-        Array.Copy(cipherIvBytes, iv.Length, cipherBytes, 0, cipherBytes.Length);
-        byte[] plainBytes = new byte[cipherBytes.Length];
+        byte[] encBytes = new byte[encIvBytes.Length - iv.Length];
+        Array.Copy(encIvBytes, iv, iv.Length);
+        Array.Copy(encIvBytes, iv.Length, encBytes, 0, encBytes.Length);
+        byte[] inpBytes = new byte[encBytes.Length];
 
         using (Aes aes = Aes.Create())
         {
@@ -119,15 +157,14 @@ public class AESEncryptionManager
 
             using (ICryptoTransform decryptor = aes.CreateDecryptor())
             {
-                plainBytes = decryptor.TransformFinalBlock(cipherBytes, 0, cipherBytes.Length);
+                inpBytes = decryptor.TransformFinalBlock(encBytes, 0, encBytes.Length);
             }
 
-            return Encoding.UTF8.GetString(plainBytes);
+            return Encoding.UTF8.GetString(inpBytes);
         }
     }
 }
 
-// пример использования
 class Program
 {
     public async Task<List<UserData>> GetData()
