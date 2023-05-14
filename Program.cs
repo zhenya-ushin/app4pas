@@ -5,44 +5,22 @@ using System.Collections.Generic;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
 using DBRequest;
-
-namespace DBRequest
-{
-    public partial class DatabaseContext : DbContext
-    {
-        public DbSet<UserData> UserDates { get; set; } = null!;
-        public DatabaseContext() => Database.EnsureCreated();
-
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            optionsBuilder.UseSqlite("DataSource = DataPass.db");
-        }
-    }
-    public partial class RegContext : DbContext
-    {
-        public DbSet<Registration> Registrations { get; set; } = null!;
-        public RegContext() => Database.EnsureCreated();
-
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            optionsBuilder.UseSqlite("DataSource = RegPass.db");
-        }
-
-
-    }
-}
+using PasswordEncryption;
+using System.Runtime.CompilerServices;
 
 class Program
     {
         static void Main()
         {
-            // Шифрование и дешифровка введённого пользователем пароля
-            AESEncryptionManager manager = new();
+        // Шифрование и дешифровка введённого пользователем пароля
+        AESEncryptionManager manager = new();
             string inptxt = "P4$$w0Rd5212772";
-            string enctxt = manager.Encrypt(inptxt);
-            Console.WriteLine("InputPassword: {0}", manager.Decrypt(enctxt));
+            byte[] EncKey = manager.AESgenerateKey();
+            byte[] EncIv = manager.AESgenerateIV();
+            string enctxt = manager.Encrypt(inptxt, EncKey, EncIv);
+            Console.WriteLine("InputPassword: {0}", inptxt);
             Console.WriteLine("EncPassword: {0}", enctxt);
-            Console.WriteLine("DecPassword: {0}", manager.Decrypt(enctxt));
+            Console.WriteLine("DecPassword: {0}", manager.Decrypt(enctxt, EncKey, EncIv));
             using (DatabaseContext db = new())
             {
                 // создаем два объекта
@@ -53,60 +31,101 @@ class Program
                 db.UserDates.Add(UD1);
                 db.UserDates.Add(UD2);
                 db.SaveChanges();
-                Console.WriteLine("Objects saved");
+                Console.WriteLine("\nObjects saved");
             }
-            using (RegContext rg = new())
-            {
-                // Записываем введённый пользователем логин и пароль во врЕменные переменные 
-                Console.WriteLine("Input ur email: ");
-                string RegEmail = Console.ReadLine();
-                Console.WriteLine("Input ur password: ");
-                string RegPassword = Console.ReadLine();
-
-                // Шифруем введённые данные и выводим ключ на экран
-                string ShifRegMail = manager.Encrypt(RegEmail);
-                string ShifRegPassword = manager.Encrypt(RegPassword);
-                Console.WriteLine("Ecnrypted register mail is {0}", ShifRegMail);
-                Console.WriteLine("Encrypted register password is {0}", ShifRegPassword);
-
-                // Создаём объект с зашифрованными пользовательскими данными 
-                Registration REG = new() { Regmail = ShifRegMail, RegPass = ShifRegPassword };
-
-                // Добавляем созданный объект в файл БД
-                rg.Registrations.Add(REG);
-                rg.SaveChanges();
-                Console.WriteLine("Account saved ");
-            }
-            using (RegContext rg = new())
-            {
-                string DecRegEmail, DecRegPassword, RegEmail, RegPassword;
-                Console.WriteLine("\nGoing to autorithation \n");
-
-                // Получаем !построчно! данные из БД
-                var regs = rg.Registrations.ToList();
-                foreach (Registration r in regs)
+        Console.WriteLine("Registration account? (yes/no)\n ");
+        string boolreg = Console.ReadLine();
+        switch(boolreg)
+        {
+            case "yes":
+                using (RegContext rg = new())
                 {
-                    RegEmail = r.Regmail;
-                    RegPassword = r.RegPass;
+                    // Записываем введённый пользователем логин и пароль во врЕменные переменные 
+                    Console.WriteLine("Input ur email: \n");
+                    string RegEmail = Console.ReadLine();
+                    Console.WriteLine("\nInput ur password: \n");
+                    string RegPassword = Console.ReadLine();
 
-                    // Дешифруем данные пользователя
-                    DecRegEmail = manager.Decrypt(RegEmail);
-                    DecRegPassword = manager.Decrypt(RegPassword);
-
-                    // Считываем введённые логин и пароль и сравниваем с БД
-                    AutorithationController AC = new();
-                    string Mail = AutorithationController.ControlMail();
-                    string Pass = AutorithationController.ControlPass();
-                    if (Mail == DecRegEmail && Pass == DecRegPassword)
+                    using (RegKey rk = new())
                     {
-                        Console.WriteLine("Acces is allowed! ");
-                    }
-                    else 
-                { 
-                    Console.WriteLine("Acces denied :( "); 
+                        // Шифруем введённые данные и выводим ключ на экран
 
+                        byte[] EncRegMailIV =manager.AESgenerateIV();
+                        Console.WriteLine("\nEcnrypted iv register mail is ", EncRegMailIV);
+                        byte[] EncRegMailKey = manager.AESgenerateKey();
+                        Console.WriteLine("\nEcnrypted key register mail is ", EncRegMailKey);
+                        string ShifRegMail = manager.Encrypt(RegEmail, EncRegMailKey, EncRegMailIV);
+                        Console.WriteLine("\nEcnrypted register mail is {0}", ShifRegMail);
+
+                        byte[] EncRegPassIV = manager.AESgenerateIV();
+                        Console.WriteLine("\nEcnrypted iv register mail is ", EncRegPassIV);
+                        byte[] EncRegPassKey = manager.AESgenerateKey();
+                        Console.WriteLine("\nEcnrypted key register mail is ", EncRegPassKey);
+                        string ShifRegPassword = manager.Encrypt(RegPassword, EncRegPassKey, EncRegPassIV);
+                        Console.WriteLine("\nEncrypted register password is {0}", ShifRegPassword);
+
+                        EcnryptedKey EKey = new() { ServiceName = "Registration", EncKeyLogin = EncRegMailKey, EncIVLogin = EncRegMailIV, EncKeyPassword = EncRegPassKey, EncIVPassword = EncRegPassIV };
+                        rk.EncKeys.Add(EKey);
+                        rk.SaveChanges();
+                        // Создаём объект с зашифрованными пользовательскими данными 
+                        Registration REG = new() { Regmail = ShifRegMail, RegPass = ShifRegPassword };
+
+                        // Добавляем созданный объект в файл БД
+                        rg.Registrations.Add(REG);
+                        rg.SaveChanges();
+                        Console.WriteLine("\nAccount saved ");
+                    }
                 }
+                goto case "no";
+            case "no":
+                using (RegContext rg = new())
+                {
+                    using (RegKey rk = new())
+                    {
+                        string DecRegEmail, DecRegPassword, RegEmail, RegPassword; 
+                        byte[] KeyLogin,KeyPassword, IVLogin, IVPassword;
+                        Console.WriteLine("\nGoing to autorithation \n");
+
+                        // Получаем !построчно! данные из БД
+                        var regs = rg.Registrations.ToList();
+                        foreach (Registration r in regs)
+                        {
+                            RegEmail = r.Regmail;
+                            RegPassword = r.RegPass;
+                            var rkey = rk.EncKeys.ToList();
+                            foreach (EcnryptedKey k in rkey)
+                            {
+                                KeyLogin = k.EncKeyLogin;
+                                IVLogin = k.EncIVLogin;
+                                KeyPassword = k.EncKeyPassword;
+                                IVPassword = k.EncIVPassword;
+
+                                // Дешифруем данные пользователя
+                                DecRegEmail = manager.Decrypt(RegEmail, KeyLogin, IVLogin);
+                                DecRegPassword = manager.Decrypt(RegPassword, KeyPassword, IVPassword);
+
+                                // Считываем введённые логин и пароль и сравниваем с БД
+                                AutorithationController AC = new();
+                                string Mail = AutorithationController.ControlMail();
+                                string Pass = AutorithationController.ControlPass();
+                                if (Mail == DecRegEmail && Pass == DecRegPassword)
+                                {
+                                    Console.WriteLine("\nAcces is allowed! ");
+                                }
+                                else
+                                {
+                                    Console.WriteLine("\nAcces denied :( ");
+
+                                }
+                            }
+                        }
+                    }
                 }
-            }
+                break;
+
+        }
+
+            
+           
         }
     }

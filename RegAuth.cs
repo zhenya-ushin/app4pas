@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-public partial class AutorithationController
+﻿public partial class AutorithationController
 {
     // Сверяем логин и пароль из класса Autorithation с логином и паролем из файла создающегося в RegContext
     public static string ControlMail()
