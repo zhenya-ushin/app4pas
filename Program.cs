@@ -18,37 +18,21 @@ namespace DBRequest
         {
             optionsBuilder.UseSqlite("DataSource = DataPass.db");
         }
-
-
     }
-}
-namespace DBRequest
-{
-    public class DatabaseReg : DbContext
+    public class RegContext : DbContext
     {
         public DbSet<Registration> Registrations { get; set; } = null!;
-        public DatabaseReg() => Database.EnsureCreated();
+        public RegContext() => Database.EnsureCreated();
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             optionsBuilder.UseSqlite("DataSource = RegPass.db");
-            optionsBuilder.Entity<Registration>().Totable("RegUser");
         }
 
 
     }
 }
-public class Registration
-{
-    public int Id { get; set; }
-    public string Regmail { get; set; }
-    public string RegPass { get; set; }
-}
 
-class RegController
-{
-    //написать код для добавления данных из класса Registration в отдельный файл БД
-}
 public class Autorithation
 {
     public int Id { get; set; }
@@ -58,7 +42,20 @@ public class Autorithation
 
 public class AutorithationController
 {
-    //Написать код сверяющий логин и пароль из класса Autorithation с логином и паролем из отдельного файла
+    // Сверяем логин и пароль из класса Autorithation с логином и паролем из файла создающегося в RegContext
+    public string ControlMail()
+    {
+        Console.WriteLine("Input your login: ");
+        string LogMail = Console.ReadLine();
+        return LogMail;
+    }
+    public string ControlPass()
+    {
+        Console.WriteLine("Input your master-password: ");
+        string MasterPassword = Console.ReadLine();
+        return MasterPassword;
+    }
+    
 }
 public class UserData
 {
@@ -68,6 +65,18 @@ public class UserData
     public string Pass { get; set; }
 
 }
+public class Registration
+{
+    public int Id { get; set; }
+    public string Regmail { get; set; }
+    public string RegPass { get; set; }
+
+    public void RegController(string args)
+    {
+
+    }
+}
+
 public class PasswordController
 {
     private string fileName;
@@ -165,19 +174,11 @@ public class AESEncryptionManager
     }
 }
 
-class Program
+class  Program
 {
-    public async Task<List<UserData>> GetData()
-    {
-        using (var db = new DatabaseContext())
-        {
-            var data = await db.UserDates.ToListAsync();
-            return data;
-        }
-    }
-
     static void Main()
     {
+        // Шифрование и дешифровка введённого пользователем пароля
         AESEncryptionManager manager = new AESEncryptionManager();
         string inptxt = "P4$$w0Rd5212772";
         string enctxt = manager.Encrypt(inptxt);
@@ -185,7 +186,7 @@ class Program
         Console.WriteLine("InputPassword: {0}", manager.Decrypt(enctxt));
         Console.WriteLine("EncPassword: {0}", enctxt);
         Console.WriteLine("DecPassword: {0}", manager.Decrypt(enctxt));
-        using (DatabaseContext db = new DatabaseContext()) 
+        using (DatabaseContext db = new DatabaseContext())
         {
             // создаем два объекта
             UserData UD1 = new UserData { ServiceName = "Steam", Log = "biba1", Pass = "biba1" };
@@ -196,16 +197,55 @@ class Program
             db.UserDates.Add(UD2);
             db.SaveChanges();
             Console.WriteLine("Objects saved");
-            //GetData
+        }
+        using (RegContext rg = new RegContext())
+        {
+            // Записываем введённый пользователем логин и пароль во врЕменные переменные 
+            Console.WriteLine("Input ur email: ");
+            string RegEmail = Console.ReadLine();
+            Console.WriteLine("Input ur password: ");
+            string RegPassword = Console.ReadLine();
 
-            // получаем объекты из бд и выводим в консоль
-           // var userDates = db.UserDates.ToList();
-           // Console.WriteLine("list of object");
-           // foreach (UserDate u in userDates)
-           // {
-           //     Console.WriteLine($"{u.Id}.{u.ServiceName} - {u.Log} - {u.Pass}");
-           // }
+            // Шифруем введённые данные и выводим ключ на экран
+            string ShifRegMail = manager.Encrypt(RegEmail);
+            string ShifRegPassword = manager.Encrypt(RegPassword);
+            Console.WriteLine("Ecnrypted register mail is {0}", ShifRegMail);
+            Console.WriteLine("Encrypted register password is {0}", ShifRegPassword);
 
+            // Создаём объект с зашифрованными пользовательскими данными 
+            Registration REG = new Registration { Regmail = ShifRegMail, RegPass = ShifRegPassword };
+
+            // Добавляем созданный объект в файл БД
+            rg.Registrations.Add(REG);
+            rg.SaveChanges();
+            Console.WriteLine("Account saved ");
+        }
+        using (RegContext rg = new RegContext())
+        {
+            string DecRegEmail, DecRegPassword, RegEmail, RegPassword;
+            Console.WriteLine("\nGoing to autorithation \n");
+
+            // Получаем !построчно! данные из БД
+            var regs = rg.Registrations.ToList();
+            foreach (Registration r in regs)
+            {
+                RegEmail = r.Regmail;
+                RegPassword = r.RegPass;
+
+                // Дешифруем данные пользователя
+                DecRegEmail = manager.Decrypt(RegEmail);
+                DecRegPassword = manager.Decrypt(RegPassword);
+
+                // Считываем введённые логин и пароль и сравниваем с БД
+                AutorithationController AC = new AutorithationController();
+                string Mail = AC.ControlMail();
+                string Pass = AC.ControlPass();
+                if (Mail == DecRegEmail && Pass == DecRegPassword)
+                {
+                    Console.WriteLine("Acces is allowed! ");
+                }
+                else { Console.WriteLine("Acces denied :( "); }
+            }
         }
     }
 }
