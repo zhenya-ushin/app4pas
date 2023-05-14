@@ -37,18 +37,17 @@ class Program
         static void Main()
         {
             // Шифрование и дешифровка введённого пользователем пароля
-            AESEncryptionManager manager = new AESEncryptionManager();
+            AESEncryptionManager manager = new();
             string inptxt = "P4$$w0Rd5212772";
             string enctxt = manager.Encrypt(inptxt);
-            string dectxt = manager.Decrypt(enctxt);
             Console.WriteLine("InputPassword: {0}", manager.Decrypt(enctxt));
             Console.WriteLine("EncPassword: {0}", enctxt);
             Console.WriteLine("DecPassword: {0}", manager.Decrypt(enctxt));
-            using (DatabaseContext db = new DatabaseContext())
+            using (DatabaseContext db = new())
             {
                 // создаем два объекта
-                UserData UD1 = new UserData { ServiceName = "Steam", Login = "biba1", Password = "biba1" };
-                UserData UD2 = new UserData { ServiceName = "Vk", Login = "biba2", Password = "biba2" };
+                UserData UD1 = new () { ServiceName = "Steam", Login = "biba1", Password = "biba1" };
+                UserData UD2 = new () { ServiceName = "Vk", Login = "biba2", Password = "biba2" };
 
                 // добавляем объекты в бд
                 db.UserDates.Add(UD1);
@@ -56,7 +55,7 @@ class Program
                 db.SaveChanges();
                 Console.WriteLine("Objects saved");
             }
-            using (RegContext rg = new RegContext())
+            using (RegContext rg = new())
             {
                 // Записываем введённый пользователем логин и пароль во врЕменные переменные 
                 Console.WriteLine("Input ur email: ");
@@ -71,14 +70,14 @@ class Program
                 Console.WriteLine("Encrypted register password is {0}", ShifRegPassword);
 
                 // Создаём объект с зашифрованными пользовательскими данными 
-                Registration REG = new Registration { Regmail = ShifRegMail, RegPass = ShifRegPassword };
+                Registration REG = new() { Regmail = ShifRegMail, RegPass = ShifRegPassword };
 
                 // Добавляем созданный объект в файл БД
                 rg.Registrations.Add(REG);
                 rg.SaveChanges();
                 Console.WriteLine("Account saved ");
             }
-            using (RegContext rg = new RegContext())
+            using (RegContext rg = new())
             {
                 string DecRegEmail, DecRegPassword, RegEmail, RegPassword;
                 Console.WriteLine("\nGoing to autorithation \n");
@@ -95,14 +94,18 @@ class Program
                     DecRegPassword = manager.Decrypt(RegPassword);
 
                     // Считываем введённые логин и пароль и сравниваем с БД
-                    AutorithationController AC = new AutorithationController();
-                    string Mail = AC.ControlMail();
-                    string Pass = AC.ControlPass();
+                    AutorithationController AC = new();
+                    string Mail = AutorithationController.ControlMail();
+                    string Pass = AutorithationController.ControlPass();
                     if (Mail == DecRegEmail && Pass == DecRegPassword)
                     {
                         Console.WriteLine("Acces is allowed! ");
                     }
-                    else { Console.WriteLine("Acces denied :( "); }
+                    else 
+                { 
+                    Console.WriteLine("Acces denied :( "); 
+
+                }
                 }
             }
         }
