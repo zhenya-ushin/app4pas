@@ -82,6 +82,7 @@ public partial class UserDataRep
         {
             databaseContext.UserDates.Remove(SearchUser);
             databaseContext.SaveChanges();
+
         }
     }
 }

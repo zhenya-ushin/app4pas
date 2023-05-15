@@ -12,11 +12,18 @@ class Program
     {
         static void Main()
         {
+        Console.WriteLine("Input length of password ");
+        int lenpass = int.Parse(Console.ReadLine());
+        Genpassword genpass = new();
+        int chtype = genpass.GenParameters(lenpass);
+        string typesymb = genpass.TypeSymbPass(chtype);
+        string password = genpass.GenPass(lenpass, typesymb);
+        Console.WriteLine("Your Generated password is {0}", password);
         // Шифрование и дешифровка введённого пользователем пароля
         AESEncryptionManager manager = new();
             string inptxt = "P4$$w0Rd5212772";
-            byte[] EncKey = manager.AESgenerateKey();
-            byte[] EncIv = manager.AESgenerateIV();
+            string EncKey = "mysecretkey12345";
+            string EncIv = "1234567890123456";
             string enctxt = manager.Encrypt(inptxt, EncKey, EncIv);
             Console.WriteLine("InputPassword: {0}", inptxt);
             Console.WriteLine("EncPassword: {0}", enctxt);
@@ -50,21 +57,19 @@ class Program
                     {
                         // Шифруем введённые данные и выводим ключ на экран
 
-                        byte[] EncRegMailIV =manager.AESgenerateIV();
-                        Console.WriteLine("\nEcnrypted iv register mail is ", EncRegMailIV);
-                        byte[] EncRegMailKey = manager.AESgenerateKey();
-                        Console.WriteLine("\nEcnrypted key register mail is ", EncRegMailKey);
-                        string ShifRegMail = manager.Encrypt(RegEmail, EncRegMailKey, EncRegMailIV);
+                       
+                       Console.WriteLine("\nEcnrypted iv register mail is ", EncIv);
+                       
+                       Console.WriteLine("\nEcnrypted key register mail is ", EncKey);
+                        string ShifRegMail = manager.Encrypt(RegEmail, EncKey, EncIv);
                         Console.WriteLine("\nEcnrypted register mail is {0}", ShifRegMail);
 
-                        byte[] EncRegPassIV = manager.AESgenerateIV();
-                        Console.WriteLine("\nEcnrypted iv register mail is ", EncRegPassIV);
-                        byte[] EncRegPassKey = manager.AESgenerateKey();
-                        Console.WriteLine("\nEcnrypted key register mail is ", EncRegPassKey);
-                        string ShifRegPassword = manager.Encrypt(RegPassword, EncRegPassKey, EncRegPassIV);
+                        Console.WriteLine("\nEcnrypted iv register mail is ", EncIv);
+                      Console.WriteLine("\nEcnrypted key register mail is ", EncKey);
+                        string ShifRegPassword = manager.Encrypt(RegPassword, EncKey, EncIv);
                         Console.WriteLine("\nEncrypted register password is {0}", ShifRegPassword);
 
-                        EcnryptedKey EKey = new() { ServiceName = "Registration", EncKeyLogin = EncRegMailKey, EncIVLogin = EncRegMailIV, EncKeyPassword = EncRegPassKey, EncIVPassword = EncRegPassIV };
+                        EcnryptedKey EKey = new() { ServiceName = "Registration", EncKey = EncKey, EncIV = EncIv };
                         rk.EncKeys.Add(EKey);
                         rk.SaveChanges();
                         // Создаём объект с зашифрованными пользовательскими данными 
@@ -82,8 +87,7 @@ class Program
                 {
                     using (RegKey rk = new())
                     {
-                        string DecRegEmail, DecRegPassword, RegEmail, RegPassword; 
-                        byte[] KeyLogin,KeyPassword, IVLogin, IVPassword;
+                        string DecRegEmail, DecRegPassword, RegEmail, RegPassword, KeyLogin,KeyPassword, IVLogin, IVPassword;
                         Console.WriteLine("\nGoing to autorithation \n");
 
                         // Получаем !построчно! данные из БД
@@ -95,10 +99,10 @@ class Program
                             var rkey = rk.EncKeys.ToList();
                             foreach (EcnryptedKey k in rkey)
                             {
-                                KeyLogin = k.EncKeyLogin;
-                                IVLogin = k.EncIVLogin;
-                                KeyPassword = k.EncKeyPassword;
-                                IVPassword = k.EncIVPassword;
+                                KeyLogin = k.EncKey;
+                                IVLogin = k.EncIV;
+                                KeyPassword = k.EncKey;
+                                IVPassword = k.EncIV;
 
                                 // Дешифруем данные пользователя
                                 DecRegEmail = manager.Decrypt(RegEmail, KeyLogin, IVLogin);
@@ -122,7 +126,8 @@ class Program
                     }
                 }
                 break;
-
+            default: break;
+                
         }
 
             

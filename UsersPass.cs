@@ -24,9 +24,8 @@ public partial class EcnryptedKey
 {
     public int Id { get; set; } 
     public string ServiceName { get; set; }
-    public byte[] EncKeyLogin { get; set; }
-    public byte[] EncIVLogin { get; set; }
-    public byte[] EncKeyPassword { get; set; }
-    public byte[] EncIVPassword { get; set; }
+    public string EncKey { get; set; }
+    public string EncIV { get; set; }
+
 
 }
