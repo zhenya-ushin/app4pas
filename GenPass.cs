@@ -4,10 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
  
-partial class Genpassword
-{
-    public int GenParameters(int NumberOfSymbol)
-    {
+partial class Genpassword {
+    public int GenParameters(int NumberOfSymbol) {
         Console.WriteLine("Choose type of symbol for generation password \n");
         Console.WriteLine("1 - UpLetters and Numbers \n");
         Console.WriteLine("2 - LowLetters and Numbers \n");

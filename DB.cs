@@ -14,13 +14,17 @@ namespace DBRequest
         // Определяем множество объектов этой базы данных
         public DbSet<UserData> UserDates { get; set; } = null!;
 
-        // Создаём файл если его не существует
-        public DatabaseContext() => Database.EnsureCreated();
-
+        //Создаём файл если его не существует
+        public DatabaseContext()
+        {
+            Database.EnsureCreated();
+        }
         // Определяем имя файла
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseSqlite("DataSource = DataPass.db");
+           // optionsBuilder.UseSqlServer(@"Server=(localhost)\MSSQLSERVER01;Database=master;Trusted_Connection=True;");
+           //optionsBuilder.UseMySql("Database = DataPass", new MySqlServerVersion(new Version(8, 0, 33)));
+           optionsBuilder.UseSqlite("Datasource = datapss.db");
         }
     }
     public partial class RegContext : DbContext
